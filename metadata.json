@@ -1,0 +1,6 @@
+{
+  "name": "MemoryVault",
+  "description": "Google Photos mobile organizer with spiritual Bible verse architecture, celestial motifs, auto-organization by people, places, things & styles, swipable lightboxes with descriptive stories, and an AI Image Studio.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
