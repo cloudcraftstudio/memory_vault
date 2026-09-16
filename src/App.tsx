@@ -160,7 +160,14 @@ export default function App() {
       }
     } catch (err: any) {
       console.error('Sign-in failed:', err);
-      setSignInError(err.message || 'Failed to authenticate with Google. Please try again.');
+      if (err?.code === 'auth/unauthorized-domain' || err?.message?.includes('auth/unauthorized-domain')) {
+        const hostname = window.location.hostname;
+        setSignInError(
+          `Domain "${hostname}" is not authorized in Firebase. To fix this, add "${hostname}" to your Firebase Console under Authentication > Settings > Authorized domains.`
+        );
+      } else {
+        setSignInError(err?.message || 'Failed to authenticate with Google. Please try again.');
+      }
     } finally {
       setIsLoggingIn(false);
     }
