@@ -20,8 +20,8 @@ provider.addScope('https://www.googleapis.com/auth/drive.photos.readonly');
 provider.addScope('https://www.googleapis.com/auth/userinfo.profile');
 provider.addScope('https://www.googleapis.com/auth/userinfo.email');
 
-// In-memory token cache (never stored in localStorage per security guidelines)
-let cachedAccessToken: string | null = null;
+// Token cache stored in sessionStorage to survive page refreshes
+let cachedAccessToken: string | null = sessionStorage.getItem('gp_token');
 let isSigningIn = false;
 
 export const initAuth = (
@@ -34,10 +34,12 @@ export const initAuth = (
         if (onAuthSuccess) onAuthSuccess(user, cachedAccessToken);
       } else if (!isSigningIn) {
         cachedAccessToken = null;
+        sessionStorage.removeItem('gp_token');
         if (onAuthFailure) onAuthFailure();
       }
     } else {
       cachedAccessToken = null;
+      sessionStorage.removeItem('gp_token');
       if (onAuthFailure) onAuthFailure();
     }
   });
@@ -55,8 +57,10 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
     } else {
       cachedAccessToken = credential.accessToken;
     }
-
-    return { user: result.user, accessToken: cachedAccessToken };
+    if (cachedAccessToken) {
+      sessionStorage.setItem('gp_token', cachedAccessToken);
+    }
+    return { user: result.user, accessToken: cachedAccessToken! };
   } catch (error: any) {
     console.error('Google Sign-In Error:', error);
     throw error;
@@ -66,10 +70,11 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
 };
 
 export const getAccessToken = async (): Promise<string | null> => {
-  return cachedAccessToken;
+  return cachedAccessToken || sessionStorage.getItem('gp_token');
 };
 
 export const logout = async () => {
   await signOut(auth);
   cachedAccessToken = null;
+  sessionStorage.removeItem('gp_token');
 };

@@ -19,7 +19,6 @@ export const Navigation: React.FC<NavigationProps> = ({
   const tabs: { id: TabType; label: string; icon: React.FC<{ className?: string }>; badge?: number }[] = [
     { id: 'timeline', label: 'Photos', icon: Image },
     { id: 'albums', label: 'Albums', icon: Layers, badge: albumCount },
-    { id: 'people', label: 'People AI', icon: Users, badge: peopleCount },
     { id: 'books', label: 'Photo Books', icon: BookOpen },
     { id: 'vault', label: 'Cloud Vault', icon: CloudCheck },
   ];

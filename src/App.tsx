@@ -14,12 +14,13 @@ import {
   ScriptureVerse,
 } from './types';
 import {
-  INITIAL_PHOTOS,
-  INITIAL_ALBUMS,
-  INITIAL_PEOPLE,
   INITIAL_PHOTO_BOOKS,
   INITIAL_SYNC_STATUS,
 } from './data/initialData';
+
+const INITIAL_PEOPLE: PersonCluster[] = [];
+const INITIAL_PHOTOS: Photo[] = [];
+const INITIAL_ALBUMS: Album[] = [];
 import { Header } from './components/Header';
 import { Navigation, TabType } from './components/Navigation';
 import { SearchFilterBar } from './components/SearchFilterBar';
@@ -61,27 +62,27 @@ export default function App() {
 
   // Core Data States (with local persistence)
   const [photos, setPhotos] = useState<Photo[]>(() => {
-    const saved = localStorage.getItem('mv_photos');
-    return saved ? JSON.parse(saved) : INITIAL_PHOTOS;
+    const saved = localStorage.getItem('mv_photos_v2');
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [albums, setAlbums] = useState<Album[]>(() => {
-    const saved = localStorage.getItem('mv_albums');
-    return saved ? JSON.parse(saved) : INITIAL_ALBUMS;
+    const saved = localStorage.getItem('mv_albums_v2');
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [people, setPeople] = useState<PersonCluster[]>(() => {
-    const saved = localStorage.getItem('mv_people');
-    return saved ? JSON.parse(saved) : INITIAL_PEOPLE;
+    const saved = localStorage.getItem('mv_people_v2');
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [photoBooks, setPhotoBooks] = useState<PhotoBook[]>(() => {
-    const saved = localStorage.getItem('mv_books');
+    const saved = localStorage.getItem('mv_books_v2');
     return saved ? JSON.parse(saved) : INITIAL_PHOTO_BOOKS;
   });
 
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(() => {
-    const saved = localStorage.getItem('mv_sync');
+    const saved = localStorage.getItem('mv_sync_v2');
     return saved ? JSON.parse(saved) : INITIAL_SYNC_STATUS;
   });
 
@@ -104,26 +105,26 @@ export default function App() {
   // Save to localStorage when states update
   useEffect(() => {
     try {
-      localStorage.setItem('mv_photos', JSON.stringify(photos));
+      localStorage.setItem('mv_photos_v2', JSON.stringify(photos));
     } catch (e) {
       console.warn('Storage quota exceeded for photos cache', e);
     }
   }, [photos]);
 
   useEffect(() => {
-    localStorage.setItem('mv_albums', JSON.stringify(albums));
+    localStorage.setItem('mv_albums_v2', JSON.stringify(albums));
   }, [albums]);
 
   useEffect(() => {
-    localStorage.setItem('mv_people', JSON.stringify(people));
+    localStorage.setItem('mv_people_v2', JSON.stringify(people));
   }, [people]);
 
   useEffect(() => {
-    localStorage.setItem('mv_books', JSON.stringify(photoBooks));
+    localStorage.setItem('mv_books_v2', JSON.stringify(photoBooks));
   }, [photoBooks]);
 
   useEffect(() => {
-    localStorage.setItem('mv_sync', JSON.stringify(syncStatus));
+    localStorage.setItem('mv_sync_v2', JSON.stringify(syncStatus));
   }, [syncStatus]);
 
   // Initialize Firebase Auth listener
@@ -196,7 +197,7 @@ export default function App() {
             setPhotos((prev) => {
               const existingIds = new Set(prev.map((p) => p.googlePhotoId || p.id));
               const newPhotos = fetchedPhotos.filter((p) => !existingIds.has(p.googlePhotoId || p.id));
-              // Filter out dummy data that came from INITIAL_PHOTOS if this is our first successful sync
+              // Filter out dummy data that came from [] if this is our first successful sync
               const realPhotosOnly = prev.filter(p => p.source === 'google_photos');
               return [...newPhotos, ...realPhotosOnly];
             });
@@ -816,17 +817,6 @@ export default function App() {
               />
             )}
           </>
-        )}
-
-        {/* Tab 3: Face Recognition & People AI */}
-        {activeTab === 'people' && (
-          <PeopleView
-            people={people}
-            photos={photos}
-            onSelectPhoto={(photo) => setSelectedPhotoForModal(photo)}
-            onRenamePerson={handleRenamePerson}
-            onCreateAlbumForPerson={handleCreateAlbumForPerson}
-          />
         )}
 
         {/* Tab 4: Physical Photo Book Studio & Print */}
