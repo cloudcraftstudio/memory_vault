@@ -1,0 +1,99 @@
+name: Deploy to GitHub Pages & Weekly Keep-Alive
+
+on:
+  # Deploy on push to main or master branches
+  push:
+    branches:
+      - main
+      - master
+
+  # Weekly scheduled cron run (Runs every Monday at 06:00 UTC)
+  # Prevents the GitHub Pages site and workflow from going dormant without traffic
+  schedule:
+    - cron: '0 6 * * 1'
+
+  # Allows manual triggering from GitHub Actions tab
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual trigger'
+        required: false
+        default: 'Manual deploy / keep-alive trigger'
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: 'pages'
+  cancel-in-progress: false
+
+jobs:
+  # Build job
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Starter Script: Logs deployment metrics & keep-alive status
+      - name: Run Starter & Keep-Alive Script
+        run: |
+          echo "=========================================================="
+          echo "🚀 Launching MemoryVault Deployment Workflow"
+          echo "Triggered by: ${{ github.event_name }}"
+          echo "Execution Date (UTC): $(date -u)"
+          echo "Commit SHA: ${{ github.sha }}"
+          echo "Ref / Branch: ${{ github.ref_name }}"
+          echo "Weekly Keep-Alive: Active"
+          echo "=========================================================="
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Verify TypeScript & Lint
+        run: npm run lint
+
+      - name: Build production static files
+        run: npm run build
+
+      - name: Setup GitHub Pages configuration
+        uses: actions/configure-pages@v5
+
+      - name: Upload build artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist'
+
+  # Deployment job
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      # Post-deployment heartbeat ping to ensure the URL is active and warm
+      - name: Live Site Warm-Up Ping
+        run: |
+          SITE_URL="${{ steps.deployment.outputs.page_url }}"
+          echo "Successfully deployed to GitHub Pages: $SITE_URL"
+          if [ -n "$SITE_URL" ]; then
+            echo "Sending heartbeat ping to keep site warm and active..."
+            curl -s -o /dev/null -w "Heartbeat Response HTTP Status: %{http_code}\n" "$SITE_URL" || true
+          fi
+          echo "MemoryVault weekly keep-alive run completed successfully!"
