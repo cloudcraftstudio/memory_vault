@@ -190,11 +190,15 @@ export default function App() {
       if (activeToken) {
         try {
           const fetchedPhotos = await fetchGooglePhotos(activeToken);
+          
+          // Clear dummy photos and only show synced photos if we got results
           if (fetchedPhotos.length > 0) {
             setPhotos((prev) => {
               const existingIds = new Set(prev.map((p) => p.googlePhotoId || p.id));
               const newPhotos = fetchedPhotos.filter((p) => !existingIds.has(p.googlePhotoId || p.id));
-              return [...newPhotos, ...prev];
+              // Filter out dummy data that came from INITIAL_PHOTOS if this is our first successful sync
+              const realPhotosOnly = prev.filter(p => p.source === 'google_photos');
+              return [...newPhotos, ...realPhotosOnly];
             });
           }
 
@@ -203,11 +207,16 @@ export default function App() {
             setAlbums((prev) => {
               const existingAlbIds = new Set(prev.map((a) => a.googlePhotosAlbumId || a.id));
               const newAlbs = fetchedAlbums.filter((a) => !existingAlbIds.has(a.googlePhotosAlbumId || a.id));
-              return [...prev, ...newAlbs];
+              const realAlbumsOnly = prev.filter(a => a.tags.includes('Google Photos'));
+              return [...realAlbumsOnly, ...newAlbs];
             });
           }
-        } catch (apiErr) {
-          console.info('Google Photos API query finished with message:', apiErr);
+        } catch (apiErr: any) {
+          console.error('Google Photos API error:', apiErr);
+          setSyncNotice(`API Error: ${apiErr.message}. Ensure Photos Library API is enabled in Google Cloud.`);
+          setTimeout(() => setSyncNotice(null), 8000);
+          setSyncStatus((prev) => ({ ...prev, isSyncing: false }));
+          return; // Stop sync on API failure
         }
       }
 
